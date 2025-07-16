@@ -38,6 +38,7 @@ export default function CreateInvoicePage() {
   const [selectedProductId, setSelectedProductId] = useState<string>("")
   const [quantity, setQuantity] = useState(1)
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([])
+  const [isCreating, setIsCreating] = useState(false)
   const { toast } = useToast()
 
   // Fetch products from backend
@@ -104,55 +105,59 @@ export default function CreateInvoicePage() {
   }
 
   const handleSubmitInvoice = async () => {
-    if (!customerName || !customerEmail || invoiceItems.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields and add at least one item",
-        variant: "destructive",
-      })
-      return
-    }
-
-    const invoiceData: InvoiceData = {
-      customerName,
-      customerEmail,
-      items: invoiceItems.map((item) => ({
-        product: { id: item.product.id },
-        quantity: item.quantity,
-      })),
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/invoice`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(invoiceData),
-      })
-
-      if (!res.ok) {
-        const errText = await res.text()
-        throw new Error(errText)
-      }
-
-      toast({
-        title: "Success",
-        description: "Invoice created and emailed successfully!",
-      })
-
-      setCustomerName("")
-      setCustomerEmail("")
-      setInvoiceItems([])
-
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: `Failed to create invoice: ${err}`,
-        variant: "destructive",
-      })
-    }
+  if (!customerName || !customerEmail || invoiceItems.length === 0) {
+    toast({
+      title: "Error",
+      description: "Please fill in all required fields and add at least one item",
+      variant: "destructive",
+    })
+    return
   }
+
+  const invoiceData: InvoiceData = {
+    customerName,
+    customerEmail,
+    items: invoiceItems.map((item) => ({
+      product: { id: item.product.id },
+      quantity: item.quantity,
+    })),
+  }
+
+  try {
+    setIsCreating(true) // Start loading
+    const res = await fetch(`${API_BASE}/invoice`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(invoiceData),
+    })
+
+    if (!res.ok) {
+      const errText = await res.text()
+      throw new Error(errText)
+    }
+
+    toast({
+      title: "Success",
+      description: "Invoice created and emailed successfully!",
+    })
+
+    setCustomerName("")
+    setCustomerEmail("")
+    setInvoiceItems([])
+
+  } catch (err) {
+    toast({
+      title: "Error",
+      description: `Failed to create invoice: ${err}`,
+      variant: "destructive",
+    })
+  } finally {
+    setIsCreating(false) // End loading
+  }
+}
+
 
   return (
     <div className="space-y-6">
@@ -259,9 +264,41 @@ export default function CreateInvoicePage() {
                 <span className="text-2xl font-bold">₹{getTotalAmount()}</span>
               </div>
 
-              <Button className="mt-4 w-full" size="lg" onClick={handleSubmitInvoice}>
-                Create Invoice
-              </Button>
+              <Button
+  className="mt-4 w-full"
+  size="lg"
+  onClick={handleSubmitInvoice}
+  disabled={isCreating}
+>
+  {isCreating ? (
+    <span className="flex items-center justify-center gap-2">
+      <svg
+        className="animate-spin h-4 w-4 text-white"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        ></circle>
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+        ></path>
+      </svg>
+      Processing...
+    </span>
+  ) : (
+    "Create Invoice"
+  )}
+</Button>
+
             </>
           )}
         </CardContent>
