@@ -3,6 +3,10 @@ for front end readme:
 
 A modern invoice management dashboard built with Next.js, React, and Tailwind CSS. Easily create, manage, and track invoices and products for your business.
 
+📦 **Backend API**: [Invoicer Backend](https://github.com/badrinarayanms/invoiceer-backend)  
+🔗 **Live Demo**: [invoiceer-frontend.vercel.app](https://invoiceer-frontend.vercel.app/)  
+🚀 **Deployed API**: [invoiceer-o31i.onrender.com](https://invoiceer-o31i.onrender.com)
+
 ## Features
 
 - Dashboard with quick stats (revenue, invoices, products, customers)
