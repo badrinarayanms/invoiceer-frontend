@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Invoicer - Invoice Management Dashboard",
   description: "Modern invoice management system",
-    generator: 'v0.dev'
+  generator: 'Invoicer'
 }
 
 export default function RootLayout({
