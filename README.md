@@ -1,4 +1,4 @@
-for front end readme:
+
 # Invoicer Dashboard
 
 A modern invoice management dashboard built with Next.js, React, and Tailwind CSS. Easily create, manage, and track invoices and products for your business.
