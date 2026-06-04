@@ -1,4 +1,4 @@
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL
+const BACKEND = process.env.NEXT_PUBLIC_BASE_URL
 
 export async function apiFetch(
   url: string,
