@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Package, Plus, Receipt, FileText, Users, DollarSign } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
+
+
+import type { Metadata } from "next"
 
 const API_BASE = process.env.NEXT_PUBLIC_BASE_URL 
 
@@ -24,49 +28,118 @@ interface Product {
   price: number
 }
 
+
 export default function Dashboard() {
+  
   const [totalRevenue, setTotalRevenue] = useState(0)
   const [activeInvoices, setActiveInvoices] = useState(0)
   const [productCount, setProductCount] = useState(0)
   const [uniqueCustomers, setUniqueCustomers] = useState(0)
+  const [companyName, setCompanyName] = useState<string>("")
+
   const { toast } = useToast()
+  const router = useRouter()
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Fetch invoices
-        const invoicesRes = await fetch(`${API_BASE}/invoices`)
-        const invoices: Invoice[] = await invoicesRes.json()
+  const fetchMe = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        credentials: "include",
+      })
 
-        setTotalRevenue(
-          invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
-        )
-        setActiveInvoices(invoices.length)
-
-        const customerEmails = new Set(invoices.map(inv => inv.customerEmail))
-        setUniqueCustomers(customerEmails.size)
-      } catch (err) {
-        toast({ title: "Failed to load invoices", variant: "destructive" })
+      if (res.status === 401) {
+        router.push("/login")
+        return
       }
 
-      try {
-        // Fetch products
-        const productsRes = await fetch(`${API_BASE}/products`)
-        const products: Product[] = await productsRes.json()
-        setProductCount(products.length)
-      } catch (err) {
-        toast({ title: "Failed to load products", variant: "destructive" })
+      const data = await res.json()
+      setCompanyName(data.companyName)
+
+    } catch (err) {
+      console.error("Failed to fetch user info", err)
+    }
+  }
+
+  fetchMe()
+}, [])
+
+
+  useEffect(() => {
+  const fetchStats = async () => {
+    try {
+      // Fetch invoices
+      const invoicesRes = await fetch(`${API_BASE}/invoices`, {
+        credentials: "include", // ✅ IMPORTANT
+      })
+
+      if (invoicesRes.status === 401) {
+        router.push("/login")
+        return
       }
+
+      if (!invoicesRes.ok) {
+        throw new Error("Failed to fetch invoices")
+      }
+
+      const invoices: Invoice[] = await invoicesRes.json()
+
+      setTotalRevenue(
+        invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
+      )
+      setActiveInvoices(invoices.length)
+
+      const customerEmails = new Set(invoices.map(inv => inv.customerEmail))
+      setUniqueCustomers(customerEmails.size)
+
+
+    } catch (err) {
+      toast({
+        title: "Failed to load invoices",
+        description: String(err),
+        variant: "destructive",
+      })
     }
 
-    fetchStats()
-  }, [])
+    try {
+      // Fetch products
+      const productsRes = await fetch(`${API_BASE}/products`, {
+        credentials: "include", // ✅ IMPORTANT
+      })
+
+      if (productsRes.status === 401) {
+        router.push("/login")
+        return
+      }
+
+      if (!productsRes.ok) {
+        throw new Error("Failed to fetch products")
+      }
+
+      const products: Product[] = await productsRes.json()
+      setProductCount(products.length)
+
+    } catch (err) {
+      toast({
+        title: "Failed to load products",
+        variant: "destructive",
+      })
+    }
+  }
+
+  fetchStats()
+}, [])
+
+
+
 
   return (
     <div className="space-y-8">
       {/* Hero Section */}
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight">Welcome to Invoicer</h1>
+                <h1 className="text-4xl font-bold tracking-tight">
+                  Welcome {companyName || "to Invoicer"}
+                </h1>
+
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Your modern invoice management system. Create, manage, and track invoices with ease.
         </p>

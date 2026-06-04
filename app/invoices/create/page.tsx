@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useRouter } from "next/navigation"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Trash2 } from "lucide-react"
@@ -36,33 +38,60 @@ export default function CreateInvoicePage() {
   const [customerName, setCustomerName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
   const [selectedProductId, setSelectedProductId] = useState<string>("")
-  const [quantity, setQuantity] = useState(1)
+  const [quantity, setQuantity] = useState<string>("1")
+
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([])
   const [isCreating, setIsCreating] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
+
 
   // Fetch products from backend
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/products`)
-        const data = await res.json()
-        setProducts(data)
-      } catch (err) {
-        console.error("Failed to fetch products", err)
-        toast({
-          title: "Error",
-          description: "Failed to load products from server",
-          variant: "destructive",
-        })
-      }
-    }
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/products`, {
+        credentials: "include", 
+      })
 
-    fetchProducts()
-  }, [])
+      if (res.status === 401) {
+        router.push("/login")
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch products")
+      }
+
+      const data = await res.json()
+      setProducts(data)
+
+    } catch (err) {
+      console.error("Failed to fetch products", err)
+      toast({
+        title: "Error",
+        description: "Failed to load products from server",
+        variant: "destructive",
+      })
+    }
+  }
+
+  fetchProducts()
+}, [])
+
 
   const addItemToInvoice = () => {
-    if (!selectedProductId || quantity <= 0) {
+    const qty = Number(quantity)
+
+      if (!qty || qty <= 0) {
+        toast({
+          title: "Error",
+          description: "Please enter a valid quantity",
+          variant: "destructive",
+        })
+        return
+      }
+    if (!selectedProductId || qty <= 0) {
       toast({
         title: "Error",
         description: "Please select a product and enter a valid quantity",
@@ -78,7 +107,7 @@ export default function CreateInvoicePage() {
 
     if (existingIndex !== -1) {
       const updatedItems = [...invoiceItems]
-      updatedItems[existingIndex].quantity += quantity
+      updatedItems[existingIndex].quantity += qty
       updatedItems[existingIndex].lineTotal = updatedItems[existingIndex].quantity * product.price
       setInvoiceItems(updatedItems)
     } else {
@@ -86,14 +115,14 @@ export default function CreateInvoicePage() {
         ...invoiceItems,
         {
           product,
-          quantity,
-          lineTotal: quantity * product.price,
+          quantity: qty,
+          lineTotal: qty * product.price,
         },
       ])
     }
 
     setSelectedProductId("")
-    setQuantity(1)
+    setQuantity("1")
   }
 
   const removeItem = (productId: number) => {
@@ -130,8 +159,10 @@ export default function CreateInvoicePage() {
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",  
       body: JSON.stringify(invoiceData),
     })
+
 
     if (!res.ok) {
       const errText = await res.text()
@@ -210,9 +241,10 @@ export default function CreateInvoicePage() {
               <Input
                 type="number"
                 value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value) || 1)}
+                onChange={(e) => setQuantity(e.target.value)}
                 min={1}
               />
+
             </div>
             <Button onClick={addItemToInvoice} className="w-full">
               <Plus className="mr-2 h-4 w-4" />

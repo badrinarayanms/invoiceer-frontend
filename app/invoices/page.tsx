@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Eye, Mail } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { useRouter } from "next/navigation"
+
 import { useToast } from "@/hooks/use-toast"
 
 const API_BASE =  process.env.NEXT_PUBLIC_BASE_URL 
@@ -24,26 +26,44 @@ interface Invoice {
 }
 
 export default function InvoicesPage() {
+  const router = useRouter()
+
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
-    const fetchInvoices = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/invoices`)
-        const data = await res.json()
-        setInvoices(data)
-      } catch (err) {
-        console.error("Error fetching invoices:", err)
-        toast({
-          title: "Failed to Load",
-          description: "Could not fetch invoices from server",
-          variant: "destructive",
-        })
+  const fetchInvoices = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/invoices`, {
+        credentials: "include", // ✅ REQUIRED
+      })
+
+      if (res.status === 401) {
+        router.push("/login")
+        return
       }
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch invoices")
+      }
+
+      const data = await res.json()
+      setInvoices(data)
+
+    } catch (err) {
+      console.error("Error fetching invoices:", err)
+      toast({
+        title: "Failed to Load",
+        description: "Could not fetch invoices from server",
+        variant: "destructive",
+      })
     }
+  }
+
+
+  useEffect(() => {
+
 
     fetchInvoices()
   }, [])
@@ -57,6 +77,7 @@ export default function InvoicesPage() {
     try {
       const res = await fetch(`${API_BASE}/invoices/${invoiceId}/resend`, {
         method: "POST",
+        credentials: "include",  
       })
 
       if (!res.ok) throw new Error("Failed to resend")

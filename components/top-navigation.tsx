@@ -6,6 +6,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { LogOut } from "lucide-react"
+import { useRouter } from "next/navigation"
+
 
 const navigationItems = [
   {
@@ -33,6 +36,24 @@ const navigationItems = [
 export function TopNavigation() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      })
+      router.push("/login")
+
+
+    } catch (err) {
+      console.error("Logout failed", err)
+    } finally {
+      router.push("/login") // redirect to login
+    }
+  }
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -53,6 +74,15 @@ export function TopNavigation() {
               </Button>
             </Link>
           ))}
+          <Button
+          variant="ghost"
+          className="flex items-center gap-2 text-red-500"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </Button>
+
         </nav>
 
         {/* Mobile Menu */}
@@ -82,6 +112,17 @@ export function TopNavigation() {
                       </Button>
                     </Link>
                   ))}
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-2 text-red-500"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false)
+                      handleLogout()
+                    }}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </Button>
                 </nav>
               </div>
             </SheetContent>

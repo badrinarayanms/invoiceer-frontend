@@ -15,6 +15,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { useRouter } from "next/navigation"
+
 import { Plus, Edit, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
@@ -30,27 +32,47 @@ export default function ProductsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [newProduct, setNewProduct] = useState({ name: "", price: 0 })
+ const [newProduct, setNewProduct] = useState({ name: "", price: "" })
   const { toast } = useToast()
 
   const API_BASE = `${process.env.NEXT_PUBLIC_BASE_URL}/products`;
+  const router = useRouter()
+
 
   useEffect(() => {
     fetchProducts() 
   }, [])
 
   const fetchProducts = async () => {
-    try {
-      const res = await fetch(API_BASE)
-      const data = await res.json()
-      setProducts(data)
-    } catch (err) {
-      console.error("Failed to fetch products", err)
+  try {
+    const res = await fetch(API_BASE, {
+      credentials: "include", // ✅ REQUIRED
+    })
+
+    if (res.status === 401) {
+      router.push("/login")
+      return
     }
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch products")
+    }
+
+    const data = await res.json()
+    setProducts(data)
+
+  } catch (err) {
+    console.error("Failed to fetch products", err)
   }
+}
+
+
 
   const handleAddProduct = async () => {
-    if (!newProduct.name || newProduct.price <= 0) {
+
+    const price = Number(newProduct.price)
+
+    if (!newProduct.name || !price || price <= 0) {
       toast({
         title: "Error",
         description: "Please fill in all fields with valid values",
@@ -59,18 +81,22 @@ export default function ProductsPage() {
       return
     }
 
+    
+
     try {
       const res = await fetch(API_BASE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // ✅ ADD THIS
         body: JSON.stringify(newProduct),
       })
+
 
       if (!res.ok) throw new Error("Failed to add product")
 
       const data = await res.json()
       setProducts([...products, data])
-      setNewProduct({ name: "", price: 0 })
+      setNewProduct({ name: "", price: "0" })
       setIsAddDialogOpen(false)
 
       toast({ title: "Success", description: "Product added successfully" })
@@ -85,10 +111,15 @@ export default function ProductsPage() {
 
     try {
       const res = await fetch(`${API_BASE}/${editingProduct.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingProduct),
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // ✅ ADD THIS
+      body: JSON.stringify({
+        name: newProduct.name,
+        price: Number(newProduct.price),
       })
+    })
+
 
       if (!res.ok) throw new Error("Failed to update product")
 
@@ -107,6 +138,7 @@ export default function ProductsPage() {
   try {
     const res = await fetch(`${API_BASE}/${id}`, {
       method: "DELETE",
+      credentials: "include", // ✅ ADD THIS
     })
 
     const message = await res.text()
@@ -164,8 +196,10 @@ export default function ProductsPage() {
                   id="price"
                   type="number"
                   value={newProduct.price}
-                  onChange={(e) => setNewProduct({ ...newProduct, price: Number.parseFloat(e.target.value) || 0 })}
-                  placeholder="Enter price"
+                  placeholder="₹"
+                  onChange={(e) =>
+                    setNewProduct({ ...newProduct, price: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -244,9 +278,10 @@ export default function ProductsPage() {
                 <Input
                   id="edit-price"
                   type="number"
+                  placeholder="₹45"
                   value={editingProduct.price}
                   onChange={(e) =>
-                    setEditingProduct({ ...editingProduct, price: Number.parseFloat(e.target.value) || 0 })
+                    setEditingProduct({ ...editingProduct, price: Number.parseFloat(e.target.value)})
                   }
                 />
               </div>
