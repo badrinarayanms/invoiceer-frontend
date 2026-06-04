@@ -57,16 +57,19 @@ export default function SignupPage() {
     }
 
     try {
-      const response = await fetch("http://localhost:8086/auth/signup", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  credentials: "include",
-  body: JSON.stringify({
-    email: formData.email,
-    password: formData.password,
-    companyName: formData.companyName,
-  }),
-})
+      const response = await fetch(
+  `${process.env.NEXT_PUBLIC_BASE_URL}/auth/signup`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      email: formData.email,
+      password: formData.password,
+      companyName: formData.companyName,
+    }),
+  }
+)
 
 if (!response.ok) {
   const message = await response.text()
